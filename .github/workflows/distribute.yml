@@ -1,0 +1,40 @@
+name: Distribute SwipeAeroSpace
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-distribute:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: "Select Xcode (Default)"
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
+      - name: Build and export app
+        run: |
+          xcodebuild
+
+      - name: Make Release Dmg
+        run: |
+          hdiutil create temp.dmg -ov -volname "SwipeAeroSpace" -fs HFS+ -srcfolder "build/Release/SwipeAeroSpace.app"
+          hdiutil convert temp.dmg -format UDZO -o "SwipeAeroSpace.dmg"
+
+      - name: Upload a Build Artifact
+        id: upload_artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwipeAeroSpace
+          path: "SwipeAeroSpace.dmg"
+
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          files: |
+            SwipeAeroSpace.dmg
